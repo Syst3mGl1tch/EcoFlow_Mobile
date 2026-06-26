@@ -617,13 +617,30 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             {/* BUG 2 — anúncios do usuário */}
-            <View style={styles.dividerProfile} />
-            <View style={styles.myAdsHeader}>
-              <Text style={styles.myAdsTitle}>Meus anúncios</Text>
-              <View style={styles.myAdsBadge}>
-                <Text style={styles.myAdsBadgeText}>{meusProdutos.length}</Text>
-              </View>
-            </View>
+           <View style={styles.myAdsHeader}>
+  <Text style={styles.myAdsTitle}>Meus anúncios</Text>
+  <View style={styles.myAdsBadge}>
+    <Text style={styles.myAdsBadgeText}>{meusProdutos.length}</Text>
+  </View>
+</View>
+
+<TouchableOpacity
+  style={styles.btnAnunciar}
+  activeOpacity={0.85}
+  onPress={() => {
+    setEditandoId(null);
+    setAdNome('');
+    setAdDescricao('');
+    setAdTelefone('');
+    setAdEmail('');
+    setAdCategoria(null);
+    setAdFotoUri(null);
+    setModalVisible(true);
+  }}
+>
+  <Ionicons name="add-circle-outline" size={20} color={Colors.textLight} />
+  <Text style={styles.btnAnunciarText}>Anunciar material</Text>
+</TouchableOpacity>
             {meusProdutos.length === 0
               ? <Text style={styles.reviewEmpty}>Você ainda não publicou nenhum anúncio.</Text>
               : meusProdutos.map(p => (
