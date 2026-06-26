@@ -647,10 +647,6 @@ export default function HomeScreen() {
                       <Ionicons name="pencil-outline" size={15} color={Colors.primary} />
                       <Text style={styles.btnActionText}>Editar</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.btnActionDanger} onPress={() => handleDesativar(p)}>
-                      <Ionicons name="eye-off-outline" size={15} color={Colors.danger} />
-                      <Text style={styles.btnActionDangerText}>Desativar</Text>
-                    </TouchableOpacity>
                     <TouchableOpacity style={styles.btnActionDelete} onPress={() => handleExcluirProduto(p)}>
                       <Ionicons name="trash-outline" size={15} color={Colors.textLight} />
                       <Text style={styles.btnActionDeleteText}>Excluir</Text>
@@ -663,11 +659,6 @@ export default function HomeScreen() {
             <TouchableOpacity style={styles.btnLogout} activeOpacity={0.85} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={18} color={Colors.danger} />
               <Text style={styles.btnLogoutText}>Sair da conta</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.btnDesativarConta} activeOpacity={0.85} onPress={handleDesativarConta}>
-              <Ionicons name="person-remove-outline" size={18} color={Colors.textSecondary} />
-              <Text style={styles.btnDesativarContaText}>Excluir conta</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
