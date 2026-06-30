@@ -793,13 +793,13 @@ export default function HomeScreen() {
           </View>
           <ScrollView contentContainerStyle={styles.modalContent}>
 
-            <Text style={styles.label}>Nome do produto *</Text>
+            <Text style={styles.label}>Nome do produto</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="pricetag-outline" size={20} color={Colors.placeholder} style={styles.inputIcon} />
               <TextInput style={styles.input} placeholder="Ex: Garrafas PET" placeholderTextColor={Colors.placeholder} value={adNome} onChangeText={setAdNome} />
             </View>
 
-            <Text style={[styles.label, { marginTop: 14 }]}>Descrição *</Text>
+            <Text style={[styles.label, { marginTop: 14 }]}>Descrição</Text>
             <View style={[styles.inputWrapper, { height: 90, alignItems: 'flex-start', paddingVertical: 10 }]}>
               <TextInput
                 style={[styles.input, { textAlignVertical: 'top' }]}
@@ -811,7 +811,7 @@ export default function HomeScreen() {
               />
             </View>
 
-            <Text style={[styles.label, { marginTop: 14 }]}>Categoria *</Text>
+            <Text style={[styles.label, { marginTop: 14 }]}>Categoria</Text>
             <View style={styles.categoriaRow}>
               {categorias.map(cat => (
                 <TouchableOpacity
