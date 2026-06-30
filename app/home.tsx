@@ -728,14 +728,6 @@ export default function HomeScreen() {
                     <Ionicons name="pencil-outline" size={15} color={Colors.primary} />
                     <Text style={styles.btnActionText}>Editar</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.btnActionDanger} onPress={() => handleDesativar(selectedAd)}>
-                    <Ionicons name="eye-off-outline" size={15} color={Colors.danger} />
-                    <Text style={styles.btnActionDangerText}>Desativar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.btnActionDelete} onPress={() => handleExcluirProduto(selectedAd)}>
-                    <Ionicons name="trash-outline" size={15} color={Colors.textLight} />
-                    <Text style={styles.btnActionDeleteText}>Excluir</Text>
-                  </TouchableOpacity>
                 </View>
               )}
 
@@ -755,19 +747,6 @@ export default function HomeScreen() {
                         </Text>
                       </View>
                     </View>
-                    <Text style={styles.reviewComment}>{r.comentario}</Text>
-                    {usuario && r.usuario?.id === usuario.id && (
-                      <View style={styles.reviewActions}>
-                        <TouchableOpacity style={styles.btnAction} onPress={() => handleEditarAvaliacao(r)}>
-                          <Ionicons name="pencil-outline" size={15} color={Colors.primary} />
-                          <Text style={styles.btnActionText}>Editar</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.btnActionDanger} onPress={() => handleExcluirAvaliacao(r)}>
-                          <Ionicons name="trash-outline" size={15} color={Colors.danger} />
-                          <Text style={styles.btnActionDangerText}>Excluir</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
                   </View>
                 ))
               }
