@@ -58,8 +58,15 @@ export async function deactivateProduto(id: number): Promise<Produto> {
 }
 
 export async function deleteProduto(id: number): Promise<void> {
-  const res = await fetch(`${API_URL}/produtos/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error(await getErrorMessage(res, 'Erro ao excluir anuncio'));
+  const url = `${API_URL}/produtos/${id}`;
+  console.info('[DELETE produto] Enviando requisicao', { id, url, method: 'DELETE' });
+  const res = await fetch(url, { method: 'DELETE' });
+  console.info('[DELETE produto] Resposta recebida', { id, url, status: res.status, ok: res.ok });
+  if (!res.ok) {
+    const message = await getErrorMessage(res, 'Erro ao excluir anuncio');
+    console.error('[DELETE produto] Falhou', { id, url, status: res.status, message });
+    throw new Error(message);
+  }
 }
 
 export async function uploadFoto(produtoId: number, imageUri: string): Promise<void> {

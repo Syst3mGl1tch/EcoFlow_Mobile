@@ -43,8 +43,15 @@ export async function updateUsuario(id: number, data: UpdateUsuarioDTO): Promise
 }
 
 export async function deleteUsuario(id: number): Promise<void> {
-  const res = await fetch(`${API_URL}/usuarios/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error(await getErrorMessage(res, 'Erro ao excluir conta'));
+  const url = `${API_URL}/usuarios/${id}`;
+  console.info('[DELETE usuario] Enviando requisicao', { id, url, method: 'DELETE' });
+  const res = await fetch(url, { method: 'DELETE' });
+  console.info('[DELETE usuario] Resposta recebida', { id, url, status: res.status, ok: res.ok });
+  if (!res.ok) {
+    const message = await getErrorMessage(res, 'Erro ao excluir conta');
+    console.error('[DELETE usuario] Falhou', { id, url, status: res.status, message });
+    throw new Error(message);
+  }
 }
 
 export async function uploadFotoUsuario(usuarioId: number, imageUri: string): Promise<void> {

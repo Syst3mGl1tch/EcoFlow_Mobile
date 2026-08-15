@@ -1,7 +1,7 @@
 import {
   View, Text, StyleSheet, SafeAreaView, ScrollView,
   TouchableOpacity, TextInput, Dimensions, NativeSyntheticEvent,
-  NativeScrollEvent, Modal, Alert, ActivityIndicator, Image, RefreshControl,
+  NativeScrollEvent, Modal, Alert, ActivityIndicator, Image, RefreshControl, Platform,
 } from 'react-native';
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
@@ -290,7 +290,7 @@ export default function HomeScreen() {
   async function handleDesativarConta() {
     Alert.alert(
       'Excluir conta',
-      'Tem certeza que deseja excluir sua conta permanentemente?\n\nTodos os seus anuncios e avaliacoes serao removidos.',
+      'Deseja desativar sua conta? Ela deixará de aparecer nas consultas normais.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -377,49 +377,67 @@ export default function HomeScreen() {
   }
 
   function handleDesativar(produto: Produto) {
-    Alert.alert(
-      'Desativar anúncio',
-      `Deseja desativar "${produto.nome}"? Ele não aparecerá mais no feed.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Desativar', style: 'destructive',
-          onPress: async () => {
-            try {
-              await deactivateProduto(produto.id);
-              setSelectedAd(null);
-              fetchProdutos();
-              if (usuario) fetchMeusProdutos(usuario.id);
-            } catch (e) {
-              Alert.alert('Erro', e instanceof Error ? e.message : 'Erro ao desativar');
-            }
-          },
-        },
-      ]
-    );
+    const desativar = async () => {
+      console.log('[DESATIVAR UI] Produto selecionado:', produto);
+      console.log('[DESATIVAR UI] ID enviado:', produto.id);
+      try {
+        await deactivateProduto(produto.id);
+        setProdutos(atual => atual.filter(item => item.id !== produto.id));
+        setMeusProdutos(atual => atual.filter(item => item.id !== produto.id));
+        setSelectedAd(null);
+        await Promise.all([
+          fetchProdutos(),
+          usuario ? fetchMeusProdutos(usuario.id) : Promise.resolve(),
+        ]);
+      } catch (e) {
+        console.error('[DESATIVAR UI] ERRO COMPLETO:', e);
+        Alert.alert('Erro', e instanceof Error ? e.message : 'Erro ao desativar');
+      }
+    };
+
+    const mensagem = `Deseja desativar "${produto.nome}"? Ele não aparecerá mais no feed.`;
+    if (Platform.OS === 'web') {
+      if (window.confirm(mensagem)) void desativar();
+      return;
+    }
+
+    Alert.alert('Desativar anúncio', mensagem, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Desativar', style: 'destructive', onPress: () => void desativar() },
+    ]);
   }
 
   function handleExcluirProduto(produto: Produto) {
-    Alert.alert(
-      'Excluir anúncio',
-      `Tem certeza que deseja excluir "${produto.nome}" permanentemente?\n\nEsta ação não pode ser desfeita.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir', style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteProduto(produto.id);
-              setSelectedAd(null);
-              fetchProdutos();
-              if (usuario) fetchMeusProdutos(usuario.id);
-            } catch (e) {
-              Alert.alert('Erro', e instanceof Error ? e.message : 'Erro ao excluir anúncio');
-            }
-          },
-        },
-      ]
-    );
+    const excluir = async () => {
+      console.log('[DELETE UI] Produto selecionado:', produto);
+      console.log('[DELETE UI] ID enviado:', produto.id);
+      console.log('[DELETE UI] Chamando deleteProduto', { id: produto.id });
+      try {
+        await deleteProduto(produto.id);
+        console.log('[DELETE UI] deleteProduto terminou com sucesso', { id: produto.id });
+        setProdutos(atual => atual.filter(item => item.id !== produto.id));
+        setMeusProdutos(atual => atual.filter(item => item.id !== produto.id));
+        setSelectedAd(null);
+        await Promise.all([
+          fetchProdutos(),
+          usuario ? fetchMeusProdutos(usuario.id) : Promise.resolve(),
+        ]);
+      } catch (e) {
+        console.error('[DELETE UI] ERRO COMPLETO:', e);
+        Alert.alert('Erro', e instanceof Error ? e.message : 'Erro ao excluir anúncio');
+      }
+    };
+
+    const mensagem = `Deseja desativar "${produto.nome}"? Ele deixará de aparecer nas listagens.`;
+    if (Platform.OS === 'web') {
+      if (window.confirm(mensagem)) void excluir();
+      return;
+    }
+
+    Alert.alert('Excluir anúncio', mensagem, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Excluir', style: 'destructive', onPress: () => void excluir() },
+    ]);
   }
 
   function goToPage(index: number) {

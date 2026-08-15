@@ -7,3 +7,6 @@ const HOST =
     : 'localhost';
 
 export const API_URL = `http://${HOST}:8080/api`;
+
+console.log('[API] Platform:', Platform.OS);
+console.log('[API] API_URL:', API_URL);
