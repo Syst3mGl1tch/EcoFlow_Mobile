@@ -1,5 +1,7 @@
 import { API_URL } from './api';
+import { appendFotoToFormData, resolveFotoMeta } from './fotoUtils';
 import { Usuario, CreateUsuarioDTO, UpdateUsuarioDTO } from '../types/Usuario';
+import type { FotoUpload } from './produtoService';
 
 async function getErrorMessage(res: Response, fallback: string): Promise<string> {
   try {
@@ -54,29 +56,29 @@ export async function deleteUsuario(id: number): Promise<void> {
   }
 }
 
-export async function uploadFotoUsuario(usuarioId: number, imageUri: string): Promise<void> {
-  const filename = imageUri.split('/').pop() ?? 'foto.jpg';
-  const match = /\.([a-zA-Z]+)$/.exec(filename);
-  const ext = match ? match[1].toLowerCase() : 'jpg';
-  const mimeMap: Record<string, string> = {
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    png: 'image/png',
-    webp: 'image/webp',
-  };
-  const type = mimeMap[ext] ?? 'image/jpeg';
-  const file = { uri: imageUri, name: filename, type };
-
+export async function uploadFotoUsuario(usuarioId: number, imagem: FotoUpload): Promise<void> {
+  const { filename, type } = resolveFotoMeta(imagem);
   const formData = new FormData();
-  formData.append('foto', file as unknown as Blob);
+  await appendFotoToFormData(formData, imagem);
 
-  const res = await fetch(`${API_URL}/usuarios/${usuarioId}/foto`, {
-    method: 'POST',
+  const url = `${API_URL}/usuarios/${usuarioId}/foto`;
+  console.log('[UPLOAD USUARIO] Iniciando', { id: usuarioId, uri: imagem.uri, name: filename, type });
+  console.log('[UPLOAD USUARIO] URL', url);
+
+  const res = await fetch(url, {
+    method: 'PUT',
     body: formData,
   });
-  if (!res.ok) throw new Error(await getErrorMessage(res, 'Erro ao fazer upload da foto'));
+
+  console.log('[UPLOAD USUARIO] Status HTTP', res.status);
+  if (!res.ok) {
+    const message = await getErrorMessage(res, 'Erro ao fazer upload da foto');
+    console.error('[UPLOAD USUARIO] Falhou', { id: usuarioId, url, status: res.status, message });
+    throw new Error(message);
+  }
 }
 
-export function getUsuarioFotoUrl(usuarioId: number): string {
-  return `${API_URL}/usuarios/${usuarioId}/foto`;
+export function getUsuarioFotoUrl(usuarioId: number, updatedAt?: number): string {
+  const url = `${API_URL}/usuarios/${usuarioId}/foto`;
+  return updatedAt ? `${url}?updated=${updatedAt}` : url;
 }

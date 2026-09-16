@@ -13,10 +13,10 @@ import { Usuario } from '../src/types/Usuario';
 import { Produto } from '../src/types/Produto';
 import { Categoria } from '../src/types/Categoria';
 import { Avaliacao } from '../src/types/Avaliacao';
-import { getProdutos, createProduto, updateProduto, deactivateProduto, deleteProduto, uploadFoto, getProdutoFotoUrl } from '../src/services/produtoService';
+import { getProdutos, createProduto, updateProduto, deactivateProduto, deleteProduto, uploadFoto, getProdutoFotoUrl, type FotoUpload } from '../src/services/produtoService';
 import { getCategorias, createCategoria, updateCategoria, deleteCategoria } from '../src/services/categoriaService';
 import { getAvaliacoesByProduto, createAvaliacao, updateAvaliacao, deleteAvaliacao } from '../src/services/avaliacaoService';
-import { deleteUsuario, updateUsuario } from '../src/services/usuarioService';
+import { deleteUsuario, updateUsuario, uploadFotoUsuario, getUsuarioFotoUrl } from '../src/services/usuarioService';
 import { API_URL } from '../src/services/api';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -32,6 +32,9 @@ export default function HomeScreen() {
   const [perfilNome, setPerfilNome] = useState('');
   const [perfilEmail, setPerfilEmail] = useState('');
   const [savingPerfil, setSavingPerfil] = useState(false);
+  const [fotoPerfilPreview, setFotoPerfilPreview] = useState<string | null>(null);
+  const [fotoPerfilAtualizadaEm, setFotoPerfilAtualizadaEm] = useState<number | null>(null);
+  const [fotoPerfilComErro, setFotoPerfilComErro] = useState(false);
 
   // ── Dados da API ──
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -126,6 +129,9 @@ export default function HomeScreen() {
   const [adEmail, setAdEmail] = useState('');
   const [adCategoria, setAdCategoria] = useState<number | null>(null);
   const [adFotoUri, setAdFotoUri] = useState<string | null>(null);
+  const [adFotoUpload, setAdFotoUpload] = useState<FotoUpload | null>(null);
+  const [fotosProdutoAtualizadas, setFotosProdutoAtualizadas] = useState<Record<number, number>>({});
+  const [fotosProdutoComErro, setFotosProdutoComErro] = useState<Set<number>>(new Set());
   const [publishingAd, setPublishingAd] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null); // null = criar, number = editar
   const [selectedAd, setSelectedAd] = useState<Produto | null>(null);
@@ -265,25 +271,64 @@ export default function HomeScreen() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.7,
     });
     if (!result.canceled && result.assets.length > 0) {
       const asset = result.assets[0];
-      // Validação de tamanho: 5 MB
-      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-        Alert.alert('Imagem muito grande', 'O limite é 5 MB. Escolha uma imagem menor.');
+      if (asset.fileSize && asset.fileSize > 1024 * 1024) {
+        Alert.alert('Imagem muito grande', 'O limite é 1 MB. Escolha uma imagem menor.');
         return;
       }
-      // Validação de tipo
-      const ext = (asset.uri.split('.').pop() ?? '').toLowerCase();
-      if (!['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+      if (!asset.mimeType || !['image/jpeg', 'image/png', 'image/webp'].includes(asset.mimeType)) {
         Alert.alert('Formato inválido', 'Use imagens JPG, PNG ou WEBP.');
         return;
       }
       setAdFotoUri(asset.uri);
+      setAdFotoUpload({ uri: asset.uri, fileName: asset.fileName, mimeType: asset.mimeType });
+    }
+  }
+
+  async function handleSelecionarFotoPerfil() {
+    if (!usuario) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permissão negada', 'Precisamos de acesso à galeria para adicionar fotos.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (result.canceled || result.assets.length === 0) return;
+
+    const asset = result.assets[0];
+    if (asset.fileSize && asset.fileSize > 1024 * 1024) {
+      Alert.alert('Imagem muito grande', 'O limite é 1 MB. Escolha uma imagem menor.');
+      return;
+    }
+    if (!asset.mimeType || !['image/jpeg', 'image/png', 'image/webp'].includes(asset.mimeType)) {
+      Alert.alert('Formato inválido', 'Use imagens JPG, PNG ou WEBP.');
+      return;
+    }
+
+    const imagem = { uri: asset.uri, fileName: asset.fileName, mimeType: asset.mimeType };
+    setFotoPerfilPreview(imagem.uri);
+    setFotoPerfilComErro(false);
+    try {
+      await uploadFotoUsuario(usuario.id, imagem);
+      const usuarioAtualizado = { ...usuario, temFoto: true };
+      setUsuario(usuarioAtualizado);
+      await AsyncStorage.setItem('usuario', JSON.stringify(usuarioAtualizado));
+      setFotoPerfilAtualizadaEm(Date.now());
+    } catch (e) {
+      setFotoPerfilPreview(null);
+      console.error('[UPLOAD USUARIO UI] ERRO COMPLETO:', e);
+      Alert.alert('Erro', e instanceof Error ? e.message : 'Erro ao atualizar foto de perfil');
     }
   }
 
@@ -331,8 +376,14 @@ export default function HomeScreen() {
           categoriaId: adCategoria,
         });
         // Upload de foto separado se selecionou uma nova imagem local
-        if (adFotoUri && (adFotoUri.startsWith('file://') || adFotoUri.startsWith('content://'))) {
-          await uploadFoto(editandoId, adFotoUri);
+        if (adFotoUpload) {
+          await uploadFoto(editandoId, adFotoUpload);
+          setFotosProdutoAtualizadas(atual => ({ ...atual, [editandoId]: Date.now() }));
+          setFotosProdutoComErro(atual => {
+            const proximo = new Set(atual);
+            proximo.delete(editandoId);
+            return proximo;
+          });
         }
         Alert.alert('Anúncio atualizado!', `"${adNome}" foi atualizado com sucesso.`);
       } else {
@@ -347,14 +398,15 @@ export default function HomeScreen() {
           statusProduto: 'ATIVO',
         });
         // Upload da foto com o ID retornado pelo backend
-        if (adFotoUri) {
-          await uploadFoto(novoProduto.id, adFotoUri);
+        if (adFotoUpload) {
+          await uploadFoto(novoProduto.id, adFotoUpload);
+          setFotosProdutoAtualizadas(atual => ({ ...atual, [novoProduto.id]: Date.now() }));
         }
         Alert.alert('Anúncio publicado!', `"${adNome}" foi anunciado com sucesso.`);
       }
       setModalVisible(false);
       setEditandoId(null);
-      setAdNome(''); setAdDescricao(''); setAdTelefone(''); setAdEmail(''); setAdCategoria(null); setAdFotoUri(null);
+      setAdNome(''); setAdDescricao(''); setAdTelefone(''); setAdEmail(''); setAdCategoria(null); setAdFotoUri(null); setAdFotoUpload(null);
       fetchProdutos();
       fetchMeusProdutos(usuario.id);
     } catch (e) {
@@ -372,6 +424,7 @@ export default function HomeScreen() {
     setAdEmail(produto.email ?? '');
     setAdCategoria(produto.categoria?.id ?? null);
     setAdFotoUri(produto.temFoto ? getProdutoFotoUrl(produto.id) : null);
+    setAdFotoUpload(null);
     setSelectedAd(null);
     setModalVisible(true);
   }
@@ -653,6 +706,7 @@ export default function HomeScreen() {
     setAdEmail('');
     setAdCategoria(null);
     setAdFotoUri(null);
+    setAdFotoUpload(null);
     setModalVisible(true);
   }}
 >
@@ -804,7 +858,7 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={() => {
               setModalVisible(false);
               setEditandoId(null);
-              setAdNome(''); setAdDescricao(''); setAdTelefone(''); setAdEmail(''); setAdCategoria(null); setAdFotoUri(null);
+              setAdNome(''); setAdDescricao(''); setAdTelefone(''); setAdEmail(''); setAdCategoria(null); setAdFotoUri(null); setAdFotoUpload(null);
             }}>
               <Ionicons name="close" size={26} color={Colors.text} />
             </TouchableOpacity>
@@ -868,7 +922,7 @@ export default function HomeScreen() {
               }
             </TouchableOpacity>
             {adFotoUri && (
-              <TouchableOpacity onPress={() => setAdFotoUri(null)} style={styles.btnRemoverFoto}>
+              <TouchableOpacity onPress={() => { setAdFotoUri(null); setAdFotoUpload(null); }} style={styles.btnRemoverFoto}>
                 <Ionicons name="close-circle-outline" size={16} color={Colors.danger} />
                 <Text style={styles.btnRemoverFotoText}>Remover foto</Text>
               </TouchableOpacity>

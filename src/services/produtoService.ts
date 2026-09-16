@@ -1,4 +1,5 @@
 import { API_URL } from './api';
+import { appendFotoToFormData, resolveFotoMeta } from './fotoUtils';
 import { Produto, CreateProdutoDTO } from '../types/Produto';
 
 async function getErrorMessage(res: Response, fallback: string): Promise<string> {
@@ -69,29 +70,38 @@ export async function deleteProduto(id: number): Promise<void> {
   }
 }
 
-export async function uploadFoto(produtoId: number, imageUri: string): Promise<void> {
-  const filename = imageUri.split('/').pop() ?? 'foto.jpg';
-  const match = /\.([a-zA-Z]+)$/.exec(filename);
-  const ext = match ? match[1].toLowerCase() : 'jpg';
-  const mimeMap: Record<string, string> = {
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    png: 'image/png',
-    webp: 'image/webp',
-  };
-  const type = mimeMap[ext] ?? 'image/jpeg';
-  const file = { uri: imageUri, name: filename, type };
-
-  const formData = new FormData();
-  formData.append('foto', file as unknown as Blob);
-
-  const res = await fetch(`${API_URL}/produtos/${produtoId}/foto`, {
-    method: 'POST',
-    body: formData,
-  });
-  if (!res.ok) throw new Error(await getErrorMessage(res, 'Erro ao fazer upload da foto'));
+export interface FotoUpload {
+  uri: string;
+  fileName?: string | null;
+  mimeType?: string | null;
 }
 
-export function getProdutoFotoUrl(produtoId: number): string {
-  return `${API_URL}/produtos/${produtoId}/foto`;
+export async function uploadFotoProduto(produtoId: number, imagem: FotoUpload): Promise<void> {
+  const { filename, type } = resolveFotoMeta(imagem);
+  const formData = new FormData();
+  await appendFotoToFormData(formData, imagem);
+
+  const url = `${API_URL}/produtos/${produtoId}/foto`;
+  console.log('[UPLOAD PRODUTO] Iniciando', { id: produtoId, uri: imagem.uri, name: filename, type });
+  console.log('[UPLOAD PRODUTO] URL', url);
+
+  const res = await fetch(url, {
+    method: 'PUT',
+    body: formData,
+  });
+
+  console.log('[UPLOAD PRODUTO] Status HTTP', res.status);
+  if (!res.ok) {
+    const message = await getErrorMessage(res, 'Erro ao fazer upload da foto');
+    console.error('[UPLOAD PRODUTO] Falhou', { id: produtoId, url, status: res.status, message });
+    throw new Error(message);
+  }
+}
+
+/** @deprecated Use uploadFotoProduto */
+export const uploadFoto = uploadFotoProduto;
+
+export function getProdutoFotoUrl(produtoId: number, updatedAt?: number): string {
+  const url = `${API_URL}/produtos/${produtoId}/foto`;
+  return updatedAt ? `${url}?updated=${updatedAt}` : url;
 }
