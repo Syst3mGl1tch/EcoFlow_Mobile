@@ -24,6 +24,12 @@ const { width } = Dimensions.get('window');
 
 const TABS = ['Feed', 'Busca', 'Perfil'];
 
+const MENSAGEM_DESATIVAR_CONTA =
+  'Desativar conta?\n\nAo desativar sua conta, ela ficará inativa e você não poderá recuperar ou reativar a conta pela aplicação.\n\nDeseja realmente continuar?';
+
+const MENSAGEM_DESATIVAR_PRODUTO =
+  'Desativar produto?\n\nEste produto será desativado e não aparecerá mais nas listagens.\n\nDepois de desativado, você não poderá recuperá-lo pela aplicação.\n\nDeseja realmente continuar?';
+
 export default function HomeScreen() {
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
@@ -327,27 +333,27 @@ export default function HomeScreen() {
     }
   }
 
-  async function handleDesativarConta() {
-    Alert.alert(
-      'Excluir conta',
-      'Deseja desativar sua conta? Ela deixará de aparecer nas consultas normais.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir', style: 'destructive',
-          onPress: async () => {
-            if (!usuario) return;
-            try {
-              await deleteUsuario(usuario.id);
-              await AsyncStorage.multiRemove(['usuario', 'usuarioId']);
-              router.replace('/welcome');
-            } catch (e) {
-              Alert.alert('Erro', e instanceof Error ? e.message : 'Erro ao excluir conta');
-            }
-          },
-        },
-      ]
-    );
+  function handleDesativarConta() {
+    const desativar = async () => {
+      if (!usuario) return;
+      try {
+        await deleteUsuario(usuario.id);
+        await AsyncStorage.multiRemove(['usuario', 'usuarioId']);
+        router.replace('/welcome');
+      } catch (e) {
+        Alert.alert('Erro', e instanceof Error ? e.message : 'Erro ao desativar conta');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(MENSAGEM_DESATIVAR_CONTA)) void desativar();
+      return;
+    }
+
+    Alert.alert('Desativar conta?', MENSAGEM_DESATIVAR_CONTA, [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Desativar', style: 'destructive', onPress: () => void desativar() },
+    ]);
   }
 
   async function handlePublicar() {
@@ -443,26 +449,21 @@ export default function HomeScreen() {
       }
     };
 
-    const mensagem = `Deseja desativar "${produto.nome}"? Ele não aparecerá mais no feed.`;
     if (Platform.OS === 'web') {
-      if (window.confirm(mensagem)) void desativar();
+      if (window.confirm(MENSAGEM_DESATIVAR_PRODUTO)) void desativar();
       return;
     }
 
-    Alert.alert('Desativar anúncio', mensagem, [
+    Alert.alert('Desativar produto?', MENSAGEM_DESATIVAR_PRODUTO, [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Desativar', style: 'destructive', onPress: () => void desativar() },
     ]);
   }
 
   function handleExcluirProduto(produto: Produto) {
-    const excluir = async () => {
-      console.log('[DELETE UI] Produto selecionado:', produto);
-      console.log('[DELETE UI] ID enviado:', produto.id);
-      console.log('[DELETE UI] Chamando deleteProduto', { id: produto.id });
+    const desativar = async () => {
       try {
         await deleteProduto(produto.id);
-        console.log('[DELETE UI] deleteProduto terminou com sucesso', { id: produto.id });
         setProdutos(atual => atual.filter(item => item.id !== produto.id));
         setMeusProdutos(atual => atual.filter(item => item.id !== produto.id));
         setSelectedAd(null);
@@ -471,20 +472,18 @@ export default function HomeScreen() {
           usuario ? fetchMeusProdutos(usuario.id) : Promise.resolve(),
         ]);
       } catch (e) {
-        console.error('[DELETE UI] ERRO COMPLETO:', e);
-        Alert.alert('Erro', e instanceof Error ? e.message : 'Erro ao excluir anúncio');
+        Alert.alert('Erro', e instanceof Error ? e.message : 'Erro ao desativar produto');
       }
     };
 
-    const mensagem = `Deseja desativar "${produto.nome}"? Ele deixará de aparecer nas listagens.`;
     if (Platform.OS === 'web') {
-      if (window.confirm(mensagem)) void excluir();
+      if (window.confirm(MENSAGEM_DESATIVAR_PRODUTO)) void desativar();
       return;
     }
 
-    Alert.alert('Excluir anúncio', mensagem, [
+    Alert.alert('Desativar produto?', MENSAGEM_DESATIVAR_PRODUTO, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Excluir', style: 'destructive', onPress: () => void excluir() },
+      { text: 'Desativar', style: 'destructive', onPress: () => void desativar() },
     ]);
   }
 
@@ -729,12 +728,17 @@ export default function HomeScreen() {
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.btnActionDelete} onPress={() => handleExcluirProduto(p)}>
                       <Ionicons name="trash-outline" size={15} color={Colors.textLight} />
-                      <Text style={styles.btnActionDeleteText}>Excluir</Text>
+                      <Text style={styles.btnActionDeleteText}>Desativar</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
               ))
             }
+
+            <TouchableOpacity style={styles.btnDesativarConta} activeOpacity={0.85} onPress={handleDesativarConta}>
+              <Ionicons name="person-remove-outline" size={18} color={Colors.danger} />
+              <Text style={styles.btnDesativarContaText}>Desativar conta</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity style={styles.btnLogout} activeOpacity={0.85} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={18} color={Colors.danger} />

@@ -46,12 +46,12 @@ export async function updateUsuario(id: number, data: UpdateUsuarioDTO): Promise
 
 export async function deleteUsuario(id: number): Promise<void> {
   const url = `${API_URL}/usuarios/${id}`;
-  console.info('[DELETE usuario] Enviando requisicao', { id, url, method: 'DELETE' });
+  console.info('[DELETE USUARIO] id:', id);
+  console.info('[DELETE USUARIO] url:', url);
   const res = await fetch(url, { method: 'DELETE' });
-  console.info('[DELETE usuario] Resposta recebida', { id, url, status: res.status, ok: res.ok });
+  console.info('[DELETE USUARIO] status:', res.status);
   if (!res.ok) {
-    const message = await getErrorMessage(res, 'Erro ao excluir conta');
-    console.error('[DELETE usuario] Falhou', { id, url, status: res.status, message });
+    const message = await getErrorMessage(res, 'Erro ao desativar conta');
     throw new Error(message);
   }
 }
