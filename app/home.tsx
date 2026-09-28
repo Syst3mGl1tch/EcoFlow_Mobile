@@ -638,10 +638,7 @@ export default function HomeScreen() {
               <View style={styles.avatar}>
                 <Ionicons name="person" size={52} color={Colors.primaryDark} />
               </View>
-              <TouchableOpacity style={styles.avatarEditBtn}>
-                <Ionicons name="camera-outline" size={16} color={Colors.textLight} />
-              </TouchableOpacity>
-              <Text style={styles.avatarHint}>Toque na câmera para alterar a foto</Text>
+          
             </View>
 
             {/* Campos */}
