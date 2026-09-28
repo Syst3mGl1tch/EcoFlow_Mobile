@@ -60,7 +60,6 @@ export default function HomeScreen() {
     }
   }, []);
 
-  // BUG 1 — deduplicar por id E por nome (cobre duplicatas do backend com IDs diferentes)
   const fetchCategorias = useCallback(async () => {
     try {
       const data = await getCategorias();
@@ -77,7 +76,6 @@ export default function HomeScreen() {
     }
   }, []);
 
-  // BUG 2 — buscar produtos do usuário logado
   const fetchMeusProdutos = useCallback(async (usuarioId: number) => {
     try {
       const data = await getProdutos({ usuarioId });
@@ -101,7 +99,6 @@ export default function HomeScreen() {
     fetchCategorias();
   }, [fetchProdutos, fetchCategorias, fetchMeusProdutos]);
 
-  // BUG 6 — recarregar feed ao focar a tela
   useFocusEffect(
     useCallback(() => {
       fetchProdutos();
@@ -135,8 +132,6 @@ export default function HomeScreen() {
   const [publishingAd, setPublishingAd] = useState(false);
   const [editandoId, setEditandoId] = useState<number | null>(null); // null = criar, number = editar
   const [selectedAd, setSelectedAd] = useState<Produto | null>(null);
-
-  // ── Avaliações do anúncio selecionado ──
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
   const [novoComentario, setNovoComentario] = useState('');
   const [avaliacaoEditandoId, setAvaliacaoEditandoId] = useState<number | null>(null);
@@ -375,7 +370,7 @@ export default function HomeScreen() {
           email: adEmail || undefined,
           categoriaId: adCategoria,
         });
-        // Upload de foto separado se selecionou uma nova imagem local
+
         if (adFotoUpload) {
           await uploadFoto(editandoId, adFotoUpload);
           setFotosProdutoAtualizadas(atual => ({ ...atual, [editandoId]: Date.now() }));
@@ -387,7 +382,7 @@ export default function HomeScreen() {
         }
         Alert.alert('Anúncio atualizado!', `"${adNome}" foi atualizado com sucesso.`);
       } else {
-        // ── CRIAR novo produto ──
+        
         const novoProduto = await createProduto({
           nome: adNome,
           descricao: adDescricao,
@@ -397,7 +392,7 @@ export default function HomeScreen() {
           categoriaId: adCategoria,
           statusProduto: 'ATIVO',
         });
-        // Upload da foto com o ID retornado pelo backend
+
         if (adFotoUpload) {
           await uploadFoto(novoProduto.id, adFotoUpload);
           setFotosProdutoAtualizadas(atual => ({ ...atual, [novoProduto.id]: Date.now() }));
@@ -503,7 +498,6 @@ export default function HomeScreen() {
     setActivePage(page);
   }
 
-  // BUG 7 — filtrar por nome, descrição e categoria.nome (case-insensitive)
   const q = search.toLowerCase();
   const filteredAds = produtos.filter(p => {
     const matchSearch = !q
@@ -534,7 +528,7 @@ export default function HomeScreen() {
         onMomentumScrollEnd={onScroll}
         scrollEventThrottle={16}
       >
-        {/* ── PÁGINA 1: FEED ── */}
+        {/* O FEED TA AQUIIII */}
         <View style={styles.page}>
           <ScrollView
             showsVerticalScrollIndicator={false}
@@ -566,7 +560,7 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* ── PÁGINA 2: BUSCA ── */}
+        {/* PÁGINA 2 */}
         <View style={styles.page}>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.feedContent}>
             <Text style={styles.pageTitle}>Buscar materiais</Text>
